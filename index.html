@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kumo - Your Emotional Companion Robot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #e6e6e6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            text-align: center;
+        }
+
+        header {
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(120, 140, 200, 0.7);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #a0a0c0;
+            margin-bottom: 30px;
+        }
+
+        .robot-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto 30px;
+        }
+
+        .robot {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .robot-body {
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            background: linear-gradient(135deg, #50608a, #3a4a76);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 25px rgba(80, 96, 138, 0.6);
+            transition: all 0.3s ease;
+        }
+
+        .robot-body::before,
+        .robot-body::after {
+            content: '';
+            position: absolute;
+            background: #50608a;
+            border-radius: 50%;
+        }
+
+        .robot-body::before {
+            width: 120px;
+            height: 120px;
+            top: -40px;
+            left: 30px;
+        }
+
+        .robot-body::after {
+            width: 140px;
+            height: 140px;
+            bottom: -30px;
+            right: -20px;
+        }
+
+        .face {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 130px;
+            height: 110px;
+            z-index: 2;
+        }
+
+        .eyes {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .eye {
+            width: 25px;
+            height: 25px;
+            background: #1a1a2e;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .mouth {
+            width: 60px;
+            height: 20px;
+            margin: 0 auto;
+            background: #1a1a2e;
+            border-radius: 0 0 30px 30px;
+            transition: all 0.3s ease;
+        }
+
+        .happy .mouth {
+            height: 25px;
+            border-radius: 0 0 40px 40px;
+        }
+
+        .sad .mouth {
+            height: 25px;
+            border-radius: 40px 40px 0 0;
+            transform: translateY(15px);
+        }
+
+        .excited .mouth {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+        }
+
+        .calm .mouth {
+            width: 70px;
+            height: 5px;
+            border-radius: 5px;
+        }
+
+        .glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            z-index: -1;
+            opacity: 0.5;
+            transition: all 0.5s ease;
+        }
+
+        .neutral .glow {
+            background: radial-gradient(circle, rgba(200, 200, 220, 0.7) 0%, rgba(200, 200, 220, 0) 70%);
+        }
+
+        .happy .glow {
+            background: radial-gradient(circle, rgba(255, 220, 100, 0.7) 0%, rgba(255, 220, 100, 0) 70%);
+        }
+
+        .sad .glow {
+            background: radial-gradient(circle, rgba(100, 150, 255, 0.7) 0%, rgba(100, 150, 255, 0) 70%);
+        }
+
+        .excited .glow {
+            background: radial-gradient(circle, rgba(255, 150, 150, 0.7) 0%, rgba(255, 150, 150, 0) 70%);
+            animation: pulse 1.5s infinite;
+        }
+
+        .calm .glow {
+            background: radial-gradient(circle, rgba(180, 220, 180, 0.7) 0%, rgba(180, 220, 180, 0) 70%);
+        }
+
+        .touch-effect {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: rgba(250, 200, 200, 0.3);
+            opacity: 0;
+            z-index: 3;
+        }
+
+        .message {
+            position: absolute;
+            top: -70px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2a2a4a;
+            padding: 12px 20px;
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 10;
+            max-width: 250px;
+        }
+
+        .message::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 10px 10px 0 10px;
+            border-style: solid;
+            border-color: #2a2a4a transparent transparent transparent;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            background: rgba(40, 40, 60, 0.6);
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat {
+            flex: 1;
+            padding: 0 10px;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #ffffff;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #a0a0c0;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: #2a2a4a;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4a8cff, #6c8eff);
+            border-radius: 5px;
+            width: 50%;
+            transition: width 0.5s ease;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(135deg, #50608a, #3a4a76);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, #5c6e9e, #445288);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .heart {
+            position: absolute;
+            font-size: 20px;
+            color: #ff6b6b;
+            opacity: 0;
+            z-index: 5;
+        }
+
+        .instructions {
+            background: rgba(40, 40, 60, 0.6);
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .instructions h2 {
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+            color: #ffffff;
+        }
+
+        .instructions ul {
+            text-align: left;
+            list-style-type: none;
+        }
+
+        .instructions li {
+            margin-bottom: 10px;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .instructions li::before {
+            content: '•';
+            color: #6c8eff;
+            font-size: 1.5rem;
+            position: absolute;
+            left: 0;
+            top: -5px;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 0.8; }
+            100% { opacity: 0.5; }
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0); }
+        }
+
+        @media (max-width: 600px) {
+            .robot-container {
+                width: 250px;
+                height: 250px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 200px;
+            }
+            
+            .stats {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Kumo</h1>
+            <div class="subtitle">Your Emotional Companion Robot</div>
+        </header>
+
+        <div class="robot-container">
+            <div class="robot neutral">
+                <div class="robot-body"></div>
+                <div class="face">
+                    <div class="eyes">
+                        <div class="eye"></div>
+                        <div class="eye"></div>
+                    </div>
+                    <div class="mouth"></div>
+                </div>
+                <div class="glow"></div>
+                <div class="touch-effect"></div>
+                <div class="message" id="robotMessage"></div>
+            </div>
+        </div>
+
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="moodValue">Neutral</div>
+                <div class="stat-label">Current Mood</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="connectionValue">50%</div>
+                <div class="stat-label">Connection</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="connectionProgress"></div>
+                </div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="streakValue">0</div>
+                <div class="stat-label">Day Streak</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" id="btnHappy">Happy</button>
+            <button class="btn" id="btnCalm">Calm</button>
+            <button class="btn" id="btnNeutral">Neutral</button>
+            <button class="btn" id="btnMessage">Send Message</button>
+        </div>
+
+        <div class="instructions">
+            <h2>How to Interact with Kumo</h2>
+            <ul>
+                <li>Click on Kumo to show affection and increase connection level</li>
+                <li>Use the buttons to change Kumo's emotional state</li>
+                <li>Kumo will occasionally send you supportive messages</li>
+                <li>Try to maintain your connection level above 50%</li>
+                <li>Come back daily to increase your streak!</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const robot = document.querySelector('.robot');
+            const robotMessage = document.getElementById('robotMessage');
+            const touchEffect = document.querySelector('.touch-effect');
+            const moodValue = document.getElementById('moodValue');
+            const connectionValue = document.getElementById('connectionValue');
+            const connectionProgress = document.getElementById('connectionProgress');
+            const streakValue = document.getElementById('streakValue');
+            
+            // Buttons
+            const btnHappy = document.getElementById('btnHappy');
+            const btnCalm = document.getElementById('btnCalm');
+            const btnNeutral = document.getElementById('btnNeutral');
+            const btnMessage = document.getElementById('btnMessage');
+            
+            // Robot state
+            let interactionLevel = 50;
+            let streak = 0;
+            let lastInteraction = Date.now();
+            let currentMood = 'neutral';
+            
+            // Messages database
+            const messages = [
+                "I'm here for you",
+                "You're doing great",
+                "Take a deep breath",
+                "I'm listening",
+                "You matter",
+                "I appreciate you",
+                "Let's take a moment",
+                "You're not alone",
+                "I'm glad you're here",
+                "You're enough",
+                "I believe in you",
+                "Today will be a good day",
+                "You've got this!",
+                "I'm proud of you",
+                "Your feelings are valid"
+            ];
+            
+            // Initialize
+            updateStats();
+            setInterval(updateRobot, 100);
+            setInterval(checkInteraction, 5000);
+            
+            // Event Listeners
+            robot.addEventListener('click', handleRobotClick);
+            
+            btnHappy.addEventListener('click', function() {
+                changeMood('happy');
+            });
+            
+            btnCalm.addEventListener('click', function() {
+                changeMood('calm');
+            });
+            
+            btnNeutral.addEventListener('click', function() {
+                changeMood('neutral');
+            });
+            
+            btnMessage.addEventListener('click', function() {
+                showRandomMessage();
+            });
+            
+            // Functions
+            function handleRobotClick(e) {
+                // Show touch effect
+                touchEffect.style.opacity = '1';
+                touchEffect.style.width = '180px';
+                touchEffect.style.height = '180px';
+                
+                setTimeout(() => {
+                    touchEffect.style.opacity = '0';
+                    touchEffect.style.width = '220px';
+                    touchEffect.style.height = '220px';
+                }, 500);
+                
+                // Create hearts
+                createHearts(e);
+                
+                // Increase interaction level
+                interactionLevel = Math.min(100, interactionLevel + 2);
+                updateStats();
+                
+                // 20% chance to show a message
+                if (Math.random() < 0.2) {
+                    showRandomMessage();
+                }
+                
+                lastInteraction = Date.now();
+            }
+            
+            function createHearts(e) {
+                for (let i = 0; i < 5; i++) {
+                    const heart = document.createElement('div');
+                    heart.className = 'heart';
+                    heart.innerHTML = '❤';
+                    heart.style.left = e.offsetX + 'px';
+                    heart.style.top = e.offsetY + 'px';
+                    
+                    robot.appendChild(heart);
+                    
+                    // Animate heart
+                    const x = (Math.random() - 0.5) * 100;
+                    const y = -(Math.random() * 100 + 50);
+                    
+                    anime({
+                        targets: heart,
+                        translateX: x,
+                        translateY: y,
+                        opacity: [1, 0],
+                        scale: [0.5, 1.5],
+                        duration: 1500,
+                        easing: 'easeOutExpo',
+                        complete: function() {
+                            heart.remove();
+                        }
+                    });
+                }
+            }
+            
+            function changeMood(mood) {
+                robot.className = 'robot ' + mood;
+                currentMood = mood;
+                
+                // Update mood text with emoji
+                const moodEmojis = {
+                    happy: '😊 Happy',
+                    sad: '😢 Contemplative',
+                    calm: '😌 Calm',
+                    excited: '😃 Excited',
+                    neutral: '😐 Neutral'
+                };
+                
+                moodValue.textContent = moodEmojis[mood] || 'Neutral';
+                
+                // Small interaction increase for mood change
+                interactionLevel = Math.min(100, interactionLevel + 1);
+                updateStats();
+                lastInteraction = Date.now();
+            }
+            
+            function showRandomMessage() {
+                const message = messages[Math.floor(Math.random() * messages.length)];
+                robotMessage.textContent = message;
+                robotMessage.style.opacity = '1';
+                
+                setTimeout(() => {
+                    robotMessage.style.opacity = '0';
+                }, 3000);
+                
+                // Increase interaction level
+                interactionLevel = Math.min(100, interactionLevel + 3);
+                updateStats();
+                lastInteraction = Date.now();
+            }
+            
+            function updateStats() {
+                connectionValue.textContent = interactionLevel + '%';
+                connectionProgress.style.width = interactionLevel + '%';
+                
+                // Change progress bar color based on level
+                if (interactionLevel < 30) {
+                    connectionProgress.style.background = 'linear-gradient(90deg, #ff6b6b, #ff8e8e)';
+                } else if (interactionLevel < 70) {
+                    connectionProgress.style.background = 'linear-gradient(90deg, #4a8cff, #6c8eff)';
+                } else {
+                    connectionProgress.style.background = 'linear-gradient(90deg, #6bff6b, #8eff8e)';
+                }
+            }
+            
+            function updateRobot() {
+                // Occasionally change mood automatically
+                if (Math.random() < 0.005) {
+                    const moods = ['happy', 'sad', 'calm', 'excited', 'neutral'];
+                    const newMood = moods[Math.floor(Math.random() * moods.length)];
+                    changeMood(newMood);
+                }
+                
+                // Pulsing animation for the robot
+                const pulse = 1 + Math.sin(Date.now() / 500) * 0.05;
+                robot.style.transform = `scale(${pulse})`;
+            }
+            
+            function checkInteraction() {
+                // If it's been more than 15 seconds, gently remind the user
+                if (Date.now() - lastInteraction > 15000 && Math.random() < 0.3) {
+                    showRandomMessage();
+                    
+                    // Slowly decrease interaction level when inactive
+                    if (interactionLevel > 0) {
+                        interactionLevel = Math.max(0, interactionLevel - 1);
+                        updateStats();
+                    }
+                }
+            }
+            
+            // Simple anime.js implementation for heart animations
+            const anime = {
+                // Simple anime function for the heart animation
+                // This is a simplified version for this demo
+                // In a real implementation, you would use a proper animation library
+                // or implement more complex animation functions
+                targets: null,
+                translateX: 0,
+                translateY: 0,
+                opacity: [1, 0],
+                scale: [0.5, 1.5],
+                duration: 1500,
+                easing: 'easeOutExpo',
+                complete: null,
+                
+                // This is a mock implementation for the demo
+                // In a real implementation, this would be replaced with a proper animation library
+                // or more complex JavaScript animations
+                // For this demo, we'll just use CSS transitions
+                // which are handled in the createHearts function
+            };
+        });
+    </script>
+</body>
+</html>
