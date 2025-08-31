@@ -2,26 +2,14 @@ import pygame
 import sys
 import math
 import random
-from pygame import gfxdraw
 
 # Initialize pygame
 pygame.init()
 
-# For mobile detection and scaling
-import os
-is_mobile = False
-if 'ANDROID_ARGUMENT' in os.environ or 'IOS' in os.environ:
-    is_mobile = True
-
-# Screen dimensions - will be set based on device
-info = pygame.display.Info()
-if is_mobile:
-    WIDTH, HEIGHT = info.current_w, info.current_h
-else:
-    WIDTH, HEIGHT = 800, 600
-
-screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
-pygame.display.set_caption("Kumo - Your Emotional Companion")
+# Screen dimensions
+WIDTH, HEIGHT = 800, 600
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Kumo - Your Emotional Companion Robot")
 
 # Colors
 BACKGROUND = (25, 25, 40)
@@ -44,7 +32,7 @@ class RobotState:
     CALM = 3
     EXCITED = 4
 
-# Button class for mobile UI
+# Button class for UI
 class Button:
     def __init__(self, x, y, width, height, text, action=None):
         self.rect = pygame.Rect(x, y, width, height)
@@ -78,7 +66,7 @@ class EmotionalRobot:
     def __init__(self):
         self.state = RobotState.NEUTRAL
         self.position = (WIDTH // 2, HEIGHT // 2)
-        self.size = min(WIDTH, HEIGHT) // 5
+        self.size = 120
         self.pulse_value = 0
         self.pulse_direction = 1
         self.touch_timer = 0
@@ -197,11 +185,8 @@ class EmotionalRobot:
             pygame.draw.circle(surface, (30, 30, 40), (x + eye_spacing, eye_y), eye_radius)
             
             # Happy mouth
-            mouth_start = (x - self.size//3, y + self.size//4)
-            mouth_end = (x + self.size//3, y + self.size//4)
-            
             pygame.draw.arc(surface, (30, 30, 40), 
-                           (mouth_start[0], mouth_start[1], self.size//1.5, self.size//3),
+                           (x - self.size//3, y + self.size//4, self.size//1.5, self.size//3),
                            math.pi, 2*math.pi, 3)
             
         elif self.state == RobotState.SAD:
@@ -210,11 +195,8 @@ class EmotionalRobot:
             pygame.draw.circle(surface, (30, 30, 40), (x + eye_spacing, eye_y), eye_radius)
             
             # Sad mouth
-            mouth_start = (x - self.size//3, y + self.size//2)
-            mouth_end = (x + self.size//3, y + self.size//2)
-            
             pygame.draw.arc(surface, (30, 30, 40), 
-                           (mouth_start[0], mouth_start[1] - self.size//4, self.size//1.5, self.size//3),
+                           (x - self.size//3, y + self.size//4, self.size//1.5, self.size//3),
                            0, math.pi, 3)
             
         elif self.state == RobotState.CALM:
@@ -401,16 +383,6 @@ def create_buttons(robot):
         Button(20 + 3*(button_width + spacing), top_y, button_width, button_height, "Message", lambda: robot.show_message())
     ]
     
-    # Adjust for mobile (fewer buttons in a column)
-    if is_mobile:
-        button_width = WIDTH // 2 - 30
-        buttons = [
-            Button(20, top_y - 60, button_width, button_height, "Happy", lambda: robot.change_mood(RobotState.HAPPY)),
-            Button(WIDTH // 2 + 10, top_y - 60, button_width, button_height, "Calm", lambda: robot.change_mood(RobotState.CALM)),
-            Button(20, top_y, button_width, button_height, "Neutral", lambda: robot.change_mood(RobotState.NEUTRAL)),
-            Button(WIDTH // 2 + 10, top_y, button_width, button_height, "Message", lambda: robot.show_message())
-        ]
-    
     return buttons
 
 # Create robot instance
@@ -447,13 +419,6 @@ while running:
                 robot.show_message()
             elif event.key == pygame.K_r:
                 robot.interaction_level = 50
-        elif event.type == pygame.VIDEORESIZE:
-            # Handle window resizing
-            WIDTH, HEIGHT = event.w, event.h
-            screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
-            robot.position = (WIDTH // 2, HEIGHT // 2)
-            robot.size = min(WIDTH, HEIGHT) // 5
-            buttons = create_buttons(robot)
     
     # Update button hover states
     for button in buttons:
