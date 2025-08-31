@@ -7,10 +7,21 @@ from pygame import gfxdraw
 # Initialize pygame
 pygame.init()
 
-# Screen dimensions
-WIDTH, HEIGHT = 800, 600
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Kumo - Your Emotional Companion Robot")
+# For mobile detection and scaling
+import os
+is_mobile = False
+if 'ANDROID_ARGUMENT' in os.environ or 'IOS' in os.environ:
+    is_mobile = True
+
+# Screen dimensions - will be set based on device
+info = pygame.display.Info()
+if is_mobile:
+    WIDTH, HEIGHT = info.current_w, info.current_h
+else:
+    WIDTH, HEIGHT = 800, 600
+
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
+pygame.display.set_caption("Kumo - Your Emotional Companion")
 
 # Colors
 BACKGROUND = (25, 25, 40)
@@ -22,6 +33,8 @@ CALM_COLOR = (180, 220, 180)
 EXCITED_COLOR = (255, 150, 150)
 NEUTRAL_COLOR = (200, 200, 220)
 TOUCH_COLOR = (250, 200, 200)
+BUTTON_COLOR = (70, 80, 120)
+BUTTON_HOVER = (100, 110, 150)
 
 # Robot states
 class RobotState:
@@ -31,12 +44,41 @@ class RobotState:
     CALM = 3
     EXCITED = 4
 
+# Button class for mobile UI
+class Button:
+    def __init__(self, x, y, width, height, text, action=None):
+        self.rect = pygame.Rect(x, y, width, height)
+        self.text = text
+        self.action = action
+        self.hovered = False
+        
+    def draw(self, surface):
+        color = BUTTON_HOVER if self.hovered else BUTTON_COLOR
+        pygame.draw.rect(surface, color, self.rect, border_radius=15)
+        pygame.draw.rect(surface, (200, 200, 220), self.rect, 2, border_radius=15)
+        
+        font = pygame.font.SysFont("Arial", 20)
+        text_surf = font.render(self.text, True, (220, 220, 240))
+        text_rect = text_surf.get_rect(center=self.rect.center)
+        surface.blit(text_surf, text_rect)
+        
+    def check_hover(self, pos):
+        self.hovered = self.rect.collidepoint(pos)
+        return self.hovered
+        
+    def handle_event(self, event):
+        if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self.hovered and self.action:
+                self.action()
+                return True
+        return False
+
 # Main robot class
 class EmotionalRobot:
     def __init__(self):
         self.state = RobotState.NEUTRAL
         self.position = (WIDTH // 2, HEIGHT // 2)
-        self.size = 120
+        self.size = min(WIDTH, HEIGHT) // 5
         self.pulse_value = 0
         self.pulse_direction = 1
         self.touch_timer = 0
@@ -48,10 +90,18 @@ class EmotionalRobot:
             "You're doing great",
             "Take a deep breath",
             "I'm listening",
-            "You matter"
+            "You matter",
+            "I appreciate you",
+            "Let's take a moment",
+            "You're not alone",
+            "I'm glad you're here",
+            "You're enough"
         ]
         self.current_message = ""
         self.message_timer = 0
+        self.heart_particles = []
+        self.streak = 0
+        self.last_interaction_time = pygame.time.get_ticks()
         
     def update(self):
         # Update pulse animation
@@ -76,6 +126,21 @@ class EmotionalRobot:
         self.message_timer -= 1
         if self.message_timer <= 0:
             self.current_message = ""
+            
+        # Update heart particles
+        for i, particle in enumerate(self.heart_particles):
+            particle[0] += particle[3]  # x += dx
+            particle[1] += particle[4]  # y += dy
+            particle[2] -= 0.05  # size decrease
+            if particle[2] <= 0:
+                self.heart_particles.pop(i)
+                
+        # Check if robot needs attention
+        current_time = pygame.time.get_ticks()
+        if current_time - self.last_interaction_time > 15000:  # 15 seconds
+            if random.random() < 0.01:  # 1% chance per frame
+                self.show_message("I miss you...")
+                self.last_interaction_time = current_time
         
     def draw(self, surface):
         # Draw base (cloud-like shape)
@@ -87,6 +152,11 @@ class EmotionalRobot:
         # Draw touch effect if active
         if self.touch_timer > 0:
             self.draw_touch_effect(surface)
+            
+        # Draw heart particles
+        for particle in self.heart_particles:
+            x, y, size, dx, dy = particle
+            pygame.draw.circle(surface, (255, 150, 150), (int(x), int(y)), int(size))
             
         # Draw message if any
         if self.current_message:
@@ -129,7 +199,6 @@ class EmotionalRobot:
             # Happy mouth
             mouth_start = (x - self.size//3, y + self.size//4)
             mouth_end = (x + self.size//3, y + self.size//4)
-            control = (x, y + self.size//2)
             
             pygame.draw.arc(surface, (30, 30, 40), 
                            (mouth_start[0], mouth_start[1], self.size//1.5, self.size//3),
@@ -240,7 +309,7 @@ class EmotionalRobot:
         surface.blit(text, text_rect)
     
     def draw_status(self, surface):
-        font = pygame.font.SysFont("Arial", 16)
+        font = pygame.font.SysFont("Arial", 20)
         
         # Draw mood text
         mood_text = "Mood: "
@@ -258,21 +327,23 @@ class EmotionalRobot:
         text = font.render(mood_text, True, (200, 200, 220))
         surface.blit(text, (20, 20))
         
-        # Draw interaction level
+        # Draw interaction level with a progress bar
         text = font.render(f"Connection: {self.interaction_level}%", True, (200, 200, 220))
         surface.blit(text, (20, 50))
         
-        # Draw instructions
-        instructions = [
-            "Click on Kumo to interact",
-            "Press 1-5 to change mood",
-            "Press SPACE for a message",
-            "Press R to reset interaction"
-        ]
+        # Draw progress bar
+        bar_width = 200
+        bar_rect = pygame.Rect(20, 80, bar_width, 15)
+        pygame.draw.rect(surface, (50, 50, 70), bar_rect, border_radius=7)
+        fill_width = (bar_width * self.interaction_level) // 100
+        fill_rect = pygame.Rect(20, 80, fill_width, 15)
+        pygame.draw.rect(surface, (100, 180, 255), fill_rect, border_radius=7)
         
-        for i, instruction in enumerate(instructions):
-            text = font.render(instruction, True, (150, 150, 170))
-            surface.blit(text, (WIDTH - text.get_width() - 20, 20 + i*25))
+        # Draw streak
+        if self.streak > 0:
+            streak_text = f"Daily streak: {self.streak} days"
+            text = font.render(streak_text, True, (255, 220, 100))
+            surface.blit(text, (WIDTH - text.get_width() - 20, 20))
     
     def handle_click(self, pos):
         x, y = self.position
@@ -280,7 +351,16 @@ class EmotionalRobot:
         
         if distance <= self.size:
             self.touch_timer = 30
-            self.interaction_level = min(100, self.interaction_level + 5)
+            self.interaction_level = min(100, self.interaction_level + 2)
+            self.last_interaction_time = pygame.time.get_ticks()
+            
+            # Create heart particles
+            for _ in range(5):
+                angle = random.uniform(0, 2 * math.pi)
+                speed = random.uniform(1, 3)
+                dx = math.cos(angle) * speed
+                dy = math.sin(angle) * speed
+                self.heart_particles.append([x, y, random.uniform(3, 8), dx, dy])
             
             # 20% chance to show a message when touched
             if random.random() < 0.2:
@@ -307,20 +387,51 @@ class EmotionalRobot:
             self.current_message = random.choice(self.messages)
         self.message_timer = 180  # 3 seconds at 60 FPS
 
+# Create UI buttons
+def create_buttons(robot):
+    button_width = 150
+    button_height = 50
+    spacing = 20
+    top_y = HEIGHT - button_height - 20
+    
+    buttons = [
+        Button(20, top_y, button_width, button_height, "Happy", lambda: robot.change_mood(RobotState.HAPPY)),
+        Button(20 + button_width + spacing, top_y, button_width, button_height, "Calm", lambda: robot.change_mood(RobotState.CALM)),
+        Button(20 + 2*(button_width + spacing), top_y, button_width, button_height, "Neutral", lambda: robot.change_mood(RobotState.NEUTRAL)),
+        Button(20 + 3*(button_width + spacing), top_y, button_width, button_height, "Message", lambda: robot.show_message())
+    ]
+    
+    # Adjust for mobile (fewer buttons in a column)
+    if is_mobile:
+        button_width = WIDTH // 2 - 30
+        buttons = [
+            Button(20, top_y - 60, button_width, button_height, "Happy", lambda: robot.change_mood(RobotState.HAPPY)),
+            Button(WIDTH // 2 + 10, top_y - 60, button_width, button_height, "Calm", lambda: robot.change_mood(RobotState.CALM)),
+            Button(20, top_y, button_width, button_height, "Neutral", lambda: robot.change_mood(RobotState.NEUTRAL)),
+            Button(WIDTH // 2 + 10, top_y, button_width, button_height, "Message", lambda: robot.show_message())
+        ]
+    
+    return buttons
+
 # Create robot instance
 robot = EmotionalRobot()
+buttons = create_buttons(robot)
 
 # Main game loop
 clock = pygame.time.Clock()
 running = True
 
 while running:
+    mouse_pos = pygame.mouse.get_pos()
+    
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:  # Left click
-                robot.handle_click(event.pos)
+                if not robot.handle_click(event.pos):
+                    for button in buttons:
+                        button.handle_event(event)
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_1:
                 robot.change_mood(RobotState.NEUTRAL)
@@ -336,6 +447,17 @@ while running:
                 robot.show_message()
             elif event.key == pygame.K_r:
                 robot.interaction_level = 50
+        elif event.type == pygame.VIDEORESIZE:
+            # Handle window resizing
+            WIDTH, HEIGHT = event.w, event.h
+            screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
+            robot.position = (WIDTH // 2, HEIGHT // 2)
+            robot.size = min(WIDTH, HEIGHT) // 5
+            buttons = create_buttons(robot)
+    
+    # Update button hover states
+    for button in buttons:
+        button.check_hover(mouse_pos)
     
     # Update robot
     robot.update()
@@ -352,6 +474,10 @@ while running:
         pygame.draw.circle(screen, (brightness, brightness, brightness), (x, y), size)
     
     robot.draw(screen)
+    
+    # Draw UI buttons
+    for button in buttons:
+        button.draw(screen)
     
     pygame.display.flip()
     clock.tick(60)
